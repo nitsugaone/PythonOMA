@@ -11,10 +11,11 @@ class PDUBuilder:
         user: str,
         mmsc: str,
         proxy_ip: str,
-        proxy_port: int
+        proxy_port: int,
+        napid: str = "internet"
     ) -> bytes:
         wbxml = WBXMLFull.encode_full_profile(
-            apn, user, mmsc, proxy_ip, proxy_port
+            apn, user, mmsc, proxy_ip, proxy_port, napid
         )
         wsp = WSPHeaders.build()
         return WapPush.build_push(wsp + wbxml)

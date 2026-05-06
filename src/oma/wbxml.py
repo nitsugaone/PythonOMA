@@ -1,5 +1,5 @@
 # WBXML encoder for OMA CP (Client Provisioning)
-# Single source of truth — replaces wbxml_encoder.py, wbxml_real.py, wbxml_full.py
+# Single source of truth
 
 class WBXMLFull:
 
@@ -44,7 +44,8 @@ class WBXMLFull:
         user: str,
         mmsc: str,
         proxy_ip: str,
-        proxy_port: int
+        proxy_port: int,
+        napid: str = "internet"  # ← explicit NAPID used for linking
     ) -> bytes:
         out = bytearray()
 
@@ -56,12 +57,13 @@ class WBXMLFull:
             0x00  # string table length
         ])
 
-        # <wap-provisioningdoc> (has children + attributes)
+        # <wap-provisioningdoc>
         out.append(WBXMLFull.TAGS["wap-provisioningdoc"] | 0x40)
 
-        # NAPDEF: APN + auth
+        # --- NAPDEF -------------------------------------------------------
+        # NAPID must match the TO-NAPID used in APPLICATION below
         napdef_parms = (
-            WBXMLFull._parm("NAPID", apn) +
+            WBXMLFull._parm("NAPID", napid) +
             WBXMLFull._parm("BEARER", "GSM-GPRS") +
             WBXMLFull._parm("NAME", apn) +
             WBXMLFull._parm("NAP-ADDRESS", apn) +
@@ -75,11 +77,12 @@ class WBXMLFull:
         )
         out.extend(WBXMLFull._characteristic("NAPDEF", napdef_parms))
 
-        # PXLOGICAL: MMS proxy
+        # --- PXLOGICAL (MMS proxy) ----------------------------------------
         px_parms = (
             WBXMLFull._parm("PROXY-ID", proxy_ip) +
             WBXMLFull._parm("NAME", "MMS Proxy") +
             WBXMLFull._parm("STARTPAGE", mmsc) +
+            WBXMLFull._parm("TO-NAPID", napid) +   # ← link proxy → APN
             WBXMLFull._characteristic(
                 "PXAUTHINFO",
                 WBXMLFull._parm("PXAUTH-TYPE", "HTTP-BASIC") +
@@ -94,10 +97,12 @@ class WBXMLFull:
         )
         out.extend(WBXMLFull._characteristic("PXLOGICAL", px_parms))
 
-        # APPLICATION: MMS settings
+        # --- APPLICATION (MMS) -------------------------------------------
         app_parms = (
             WBXMLFull._parm("APPID", "w4") +
             WBXMLFull._parm("NAME", "MMS") +
+            WBXMLFull._parm("TO-PROXY", proxy_ip) +  # ← link app → proxy
+            WBXMLFull._parm("TO-NAPID", napid) +      # ← link app → APN
             WBXMLFull._parm("ADDR", mmsc) +
             WBXMLFull._characteristic(
                 "RESOURCE",
