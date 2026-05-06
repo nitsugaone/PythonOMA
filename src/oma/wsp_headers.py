@@ -1,19 +1,17 @@
-# Proper WSP header builder for OMA CP Push
+# WSP headers for OMA CP WAP Push
 
 class WSPHeaders:
 
     @staticmethod
-    def build():
-        return bytes([
-            0x01,  # Transaction ID
-            0x06,  # Push PDU
-            0x2E,  # Headers length (approx)
-
-            # Content-Type: application/vnd.wap.connectivity-wbxml
-            0x2F,  # well-known media
-            0xB6,  # wbxml connectivity
-
-            # X-WAP-Application-Id: x-wap-application:oma-cp
-            0xAF,
-            0x85
+    def build() -> bytes:
+        headers = bytes([
+            0x2F,  # Content-Type (well-known short)
+            0xB6,  # application/vnd.wap.connectivity-wbxml
+            0xAF,  # X-WAP-Application-Id
+            0x85   # oma-cp
         ])
+        return bytes([
+            0x01,        # Transaction ID
+            0x06,        # PDU Type: Push
+            len(headers) # ✅ real header length (not hardcoded)
+        ]) + headers
